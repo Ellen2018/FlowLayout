@@ -109,7 +109,7 @@ public class FlowLayout extends ViewGroup {
                 measureWidth = xmlWidth;
             }
         }
-        int measureSpec = MeasureSpec.makeMeasureSpec(measureWidth, MeasureSpec.AT_MOST);
+        int measureSpec = MeasureSpec.makeMeasureSpec(measureWidth, MeasureSpec.EXACTLY);
         return measureSpec;
     }
 
@@ -168,7 +168,7 @@ public class FlowLayout extends ViewGroup {
                  measureHeight = xmlHeight;
             }
         }
-        int measureSpec = MeasureSpec.makeMeasureSpec(measureHeight, MeasureSpec.AT_MOST);
+        int measureSpec = MeasureSpec.makeMeasureSpec(measureHeight, MeasureSpec.EXACTLY);
         return measureSpec;
     }
 
@@ -196,6 +196,7 @@ public class FlowLayout extends ViewGroup {
         int useWidth = measureWidth;
         lineColumn = new HashMap<>();
         lineMaxHeight = new HashMap<>();
+        //还没有做完的 未适配margin
         //第一次统计子控件的排列
         for (int i = 0; i < getChildCount(); i++) {
             View child = getChildAt(i);
