@@ -6,6 +6,7 @@ import android.util.AttributeSet;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 
 import java.util.HashMap;
 
@@ -179,18 +180,26 @@ public class FlowLayout extends ViewGroup {
             for (int j = 0; j < currentLineColumn; j++) {
                 int index = 0;
                 if (i > 0) {
-                    index = lineColumn.get(i - 1) + j;
+                    //计算子控件索引
+                    for (int z = 0; z < i; z++) {
+                        index = index + lineColumn.get(z);
+                    }
+                    index = index + j;
                 } else {
                     index = j;
                 }
                 View child = getChildAt(index);
                 int childWith = child.getMeasuredWidth();
                 int childHeight = child.getMeasuredHeight();
+                TextView textView = (TextView) child;
+                Log.d("Ellen2018", "当前控件:" + textView.getText());
+                Log.d("Ellen2018", "当前X坐标:" + x);
+                Log.d("Ellen2018", "当前y坐标:" + y);
                 int left = x;
-                int top =  y;
+                int top = y;
                 int right = x + childWith;
                 int bottom = y + childHeight;
-                child.layout(left,top,right,bottom);
+                child.layout(left, top, right, bottom);
                 x = x + childWith;
             }
         }
