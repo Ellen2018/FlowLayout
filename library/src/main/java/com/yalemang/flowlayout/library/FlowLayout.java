@@ -237,13 +237,14 @@ public class FlowLayout extends ViewGroup {
         int y = t;
         for (int i = 0; i <= line; i++) {
             Log.d("Ellen2018","line = " +i);
-            int currentLineMaxHeight = lineMaxHeight.get(i);
             int currentLineColumn = lineColumn.get(i);
             Log.d("Ellen2018","当前列数:"+currentLineColumn);
             int x = l;
             if(i > 0){
+                int currentLineMaxHeight = lineMaxHeight.get(i - 1);
                 y = y + currentLineMaxHeight;
             }
+            Log.d("Ellen2018", "当前Y起始位置:" + y);
             for (int j = 0; j < currentLineColumn; j++) {
                 int index = 0;
                 if (i > 0) {
