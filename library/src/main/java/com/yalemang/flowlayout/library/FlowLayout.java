@@ -10,7 +10,16 @@ import android.widget.TextView;
 
 import java.util.HashMap;
 
+/**
+ * 1.支持XML配置
+ * 2.支持适配器配置
+ * 3.支持滑动
+ */
 public class FlowLayout extends ViewGroup {
+
+    private int line = 0;
+    private HashMap<Integer, Integer> lineColumn;
+    private HashMap<Integer, Integer> lineMaxHeight;
 
     public FlowLayout(Context context) {
         super(context);
@@ -42,102 +51,151 @@ public class FlowLayout extends ViewGroup {
     private void parseCustomProperties() {
     }
 
+
+    /**
+     * 根据父亲的Measure测量自身的MeasureSpec:宽
+     *
+     * @param parentWidthMeasureSpec
+     * @return
+     */
+    private int getWidthMeasureSpecFromParent(int parentWidthMeasureSpec) {
+        int parentWidthSize = MeasureSpec.getSize(parentWidthMeasureSpec);
+        int parentWidthMode = MeasureSpec.getMode(parentWidthMeasureSpec);
+
+        int xmlWidth = getLayoutParams().width;
+        int measureWidth = 0;
+
+        if (parentWidthMode == MeasureSpec.EXACTLY) {
+            if (xmlWidth == LayoutParams.MATCH_PARENT) {
+                measureWidth = parentWidthSize;
+            } else if (xmlWidth == LayoutParams.WRAP_CONTENT) {
+                //这里的WRAP_CONTENT要先计算子类的宽度才能计算出流式布局的宽度
+                //但是流式布局的子控件的排列需要流式布局的宽度而定，因此这里处理为LayoutParams.MATCH_PARENT
+                measureWidth = parentWidthSize;
+            } else {
+                //具体的值
+                if (xmlWidth <= parentWidthSize) {
+                    //没有超过父亲宽度
+                    measureWidth = xmlWidth;
+                } else {
+                    //超过了父亲的宽度
+                    measureWidth = parentWidthSize;
+                }
+            }
+        } else if (parentWidthMode == MeasureSpec.AT_MOST) {
+            if (xmlWidth == LayoutParams.MATCH_PARENT) {
+                measureWidth = parentWidthSize;
+            } else if (xmlWidth == LayoutParams.WRAP_CONTENT) {
+                //这里的WRAP_CONTENT要先计算子类的宽度才能计算出流式布局的宽度
+                //但是流式布局的子控件的排列需要流式布局的宽度而定，因此这里处理为LayoutParams.MATCH_PARENT
+                measureWidth = parentWidthSize;
+            } else {
+                //具体的值
+                if (xmlWidth <= parentWidthSize) {
+                    //没有超过父亲宽度
+                    measureWidth = xmlWidth;
+                } else {
+                    //超过了父亲的宽度
+                    measureWidth = parentWidthSize;
+                }
+            }
+        } else {
+            //MeasureSpec.UNSPECIFIED
+            if (xmlWidth == LayoutParams.MATCH_PARENT) {
+                measureWidth = parentWidthSize;
+            } else if (xmlWidth == LayoutParams.WRAP_CONTENT) {
+                measureWidth = parentWidthSize;
+            } else {
+                measureWidth = xmlWidth;
+            }
+        }
+        int measureSpec = MeasureSpec.makeMeasureSpec(measureWidth, MeasureSpec.AT_MOST);
+        return measureSpec;
+    }
+
+    /**
+     * 根据父亲的Measure测量自身的MeasureSpec: 高
+     *
+     * @param parentHeightMeasureSpec
+     * @return
+     */
+    private int getHeightMeasureSpecFromParent(int parentHeightMeasureSpec) {
+        int parentHeightSize = MeasureSpec.getSize(parentHeightMeasureSpec);
+        int parentHeightMode = MeasureSpec.getMode(parentHeightMeasureSpec);
+
+        int xmlHeight = getLayoutParams().height;
+        int measureHeight = 0;
+
+        if(parentHeightMode == MeasureSpec.EXACTLY){
+             if(xmlHeight == LayoutParams.MATCH_PARENT){
+                 measureHeight = parentHeightSize;
+             }else if(xmlHeight == LayoutParams.WRAP_CONTENT){
+                 //这里需要测量子类高度，再决定自身高度
+                 //但是子控件并没有进行正确的排列。所这里也处理为LayoutParams.MATCH_PARENT
+                 measureHeight = parentHeightSize;
+             }else {
+                if(xmlHeight <= parentHeightSize){
+                    //没有超过父亲高度
+                    measureHeight = xmlHeight;
+                }else {
+                    //超过了父亲宽度
+                    measureHeight = parentHeightSize;
+                }
+             }
+        }else if(parentHeightMode == MeasureSpec.AT_MOST){
+            if(xmlHeight == LayoutParams.MATCH_PARENT){
+                measureHeight = parentHeightSize;
+            }else if(xmlHeight == LayoutParams.WRAP_CONTENT){
+                //这里需要测量子类高度，再决定自身高度
+                //但是子控件并没有进行正确的排列。所这里也处理为LayoutParams.MATCH_PARENT
+                measureHeight = parentHeightSize;
+            }else {
+                if(xmlHeight <= parentHeightSize){
+                    //没有超过父亲高度
+                    measureHeight = xmlHeight;
+                }else {
+                    //超过了父亲宽度
+                    measureHeight = parentHeightSize;
+                }
+            }
+        }else {
+            //MeasureSpec.UNSPECIFIED
+            if(xmlHeight == LayoutParams.MATCH_PARENT){
+                 measureHeight = parentHeightSize;
+            }else if(xmlHeight == LayoutParams.WRAP_CONTENT){
+                 measureHeight = parentHeightSize;
+            }else {
+                 measureHeight = xmlHeight;
+            }
+        }
+        int measureSpec = MeasureSpec.makeMeasureSpec(measureHeight, MeasureSpec.AT_MOST);
+        return measureSpec;
+    }
+
     /**
      * 测量过程需要重新规划
+     *
      * @param widthMeasureSpec
      * @param heightMeasureSpec
      */
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        measureChildren(widthMeasureSpec, heightMeasureSpec);
-        //记录最终宽和高
-        int measureWith = 0, measureHeight = 0;
-
-        //获取父控件给流式布局的Size和Mode
-        int parentWidthSize = MeasureSpec.getSize(widthMeasureSpec);
-        int parentWidthMode = MeasureSpec.getMode(widthMeasureSpec);
-        int parentHeightMode = MeasureSpec.getMode(heightMeasureSpec);
-        int parentHeightSize = MeasureSpec.getSize(heightMeasureSpec);
-
-        //对应XML布局中设置的，或者代码动态设置的LayoutParams
-        int xmlWidth = getLayoutParams().width;
-        int xmlHeight = getLayoutParams().height;
-
-        if (parentWidthMode == MeasureSpec.EXACTLY) {
-            if (xmlWidth == LayoutParams.MATCH_PARENT) {
-                measureWith = parentWidthSize;
-            } else if (xmlWidth == LayoutParams.WRAP_CONTENT) {
-                //这里的WARP指定为MATCH处理
-                measureWith = parentWidthSize;
-            } else {
-                if (xmlWidth <= parentWidthSize) {
-                    measureWith = xmlWidth;
-                } else {
-                    measureWith = parentWidthSize;
-                }
-            }
-        } else if (parentWidthMode == MeasureSpec.AT_MOST) {
-            if (xmlWidth == LayoutParams.MATCH_PARENT) {
-                measureWith = parentWidthSize;
-            } else if (xmlWidth == LayoutParams.WRAP_CONTENT) {
-                //这里的WARP指定为MATCH处理
-                measureWith = parentWidthSize;
-            } else {
-                if (xmlWidth <= parentWidthSize) {
-                    measureWith = xmlWidth;
-                } else {
-                    measureWith = parentWidthSize;
-                }
-            }
-        } else {
-            measureWith = parentWidthSize;
-        }
-
-        if (parentHeightMode == MeasureSpec.EXACTLY) {
-            if (xmlHeight == LayoutParams.MATCH_PARENT) {
-                measureHeight = parentHeightSize;
-            } else if (xmlHeight == LayoutParams.WRAP_CONTENT) {
-                //这里的WARP指定为MATCH处理
-                measureHeight = parentHeightSize;
-            } else {
-                if (xmlHeight <= parentHeightSize) {
-                    measureHeight = xmlHeight;
-                } else {
-                    measureHeight = parentHeightSize;
-                }
-            }
-        } else if (parentHeightMode == MeasureSpec.AT_MOST) {
-            if (xmlHeight == LayoutParams.MATCH_PARENT) {
-                measureHeight = parentHeightSize;
-            } else if (xmlHeight == LayoutParams.WRAP_CONTENT) {
-                //这里的WARP指定为MATCH处理
-                measureHeight = parentHeightSize;
-            } else {
-                if (xmlHeight <= parentHeightSize) {
-                    measureHeight = xmlHeight;
-                } else {
-                    measureHeight = parentHeightSize;
-                }
-            }
-        } else {
-            measureHeight = parentHeightSize;
-        }
+        //先根据父亲提供的MeasureSpec测量自身的宽高MeasureSpec
+        int flowWidthMeasureSpec = getWidthMeasureSpecFromParent(widthMeasureSpec);
+        int flowHeightMeasureSpec = getHeightMeasureSpecFromParent(heightMeasureSpec);
+        //然后测量子类
+        measureChildren(flowWidthMeasureSpec, flowHeightMeasureSpec);
         //结合xml设置的宽高和子控件需要的宽高，以及父亲给的限制计算出最终宽高
         //这里除去padding和margin
-        //设置最终宽高
-        setMeasuredDimension(measureWith, measureHeight);
-    }
+        int measureWidth = MeasureSpec.getSize(flowWidthMeasureSpec);
+        int measureHeight = 0;
 
-    @Override
-    protected void onLayout(boolean changed, int l, int t, int r, int b) {
-        int width = getMeasuredWidth();
-        int height = getMeasuredHeight();
         int currentMaxHeight = 0;
-        int line = 0;
         int column = 0;
-        int useWidth = width;
-        HashMap<Integer, Integer> lineColumn = new HashMap<>();
-        HashMap<Integer, Integer> lineMaxHeight = new HashMap<>();
+        line = 0;
+        int useWidth = measureWidth;
+        lineColumn = new HashMap<>();
+        lineMaxHeight = new HashMap<>();
         //第一次统计子控件的排列
         for (int i = 0; i < getChildCount(); i++) {
             View child = getChildAt(i);
@@ -150,9 +208,10 @@ public class FlowLayout extends ViewGroup {
                 //统计改行的最大高度
                 lineColumn.put(line, column);
                 lineMaxHeight.put(line, currentMaxHeight);
+                measureHeight = measureHeight + currentMaxHeight;
                 line++;
                 column = 0;
-                useWidth = width;
+                useWidth = measureWidth;
 
                 //统计当前换行的
                 useWidth = useWidth - childWith;
@@ -167,6 +226,14 @@ public class FlowLayout extends ViewGroup {
         }
         lineColumn.put(line, column);
         lineMaxHeight.put(line, currentMaxHeight);
+        measureHeight = measureHeight + currentMaxHeight;
+
+        //设置最终宽高
+        setMeasuredDimension(measureWidth,measureHeight);
+    }
+
+    @Override
+    protected void onLayout(boolean changed, int l, int t, int r, int b) {
         int y = t;
         for (int i = 0; i <= line; i++) {
             Log.d("Ellen2018","line = " +i);
@@ -195,11 +262,9 @@ public class FlowLayout extends ViewGroup {
                 Log.d("Ellen2018", "当前控件:" + textView.getText());
                 Log.d("Ellen2018", "当前X坐标:" + x);
                 Log.d("Ellen2018", "当前y坐标:" + y);
-                int left = x;
-                int top = y;
                 int right = x + childWith;
                 int bottom = y + childHeight;
-                child.layout(left, top, right, bottom);
+                child.layout(x, y, right, bottom);
                 x = x + childWith;
             }
         }
