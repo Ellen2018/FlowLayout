@@ -260,8 +260,6 @@ public class FlowLayout extends ViewGroup {
                 View child = getChildAt(index);
                 int childWith = child.getMeasuredWidth();
                 int childHeight = child.getMeasuredHeight();
-                TextView textView = (TextView) child;
-                Log.d("Ellen2018", "当前控件:" + textView.getText());
                 Log.d("Ellen2018", "当前X坐标:" + x);
                 Log.d("Ellen2018", "当前y坐标:" + y);
                 int right = x + childWith;
