@@ -6,7 +6,6 @@ import android.util.AttributeSet;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
 
 import java.util.HashMap;
 
@@ -20,6 +19,8 @@ public class FlowLayout extends ViewGroup {
     private int line = 0;
     private HashMap<Integer, Integer> lineColumn;
     private HashMap<Integer, Integer> lineMaxHeight;
+
+    private FlowAdapter adapter;
 
     public FlowLayout(Context context) {
         super(context);
@@ -51,6 +52,22 @@ public class FlowLayout extends ViewGroup {
     private void parseCustomProperties() {
     }
 
+    public void setAdapter(FlowAdapter adapter) {
+        this.adapter = adapter;
+        //移除所有子控件
+        removeAllViews();
+        for (int i = 0; i < this.adapter.size(); i++) {
+            int itemType = this.adapter.itemType(i);
+            FlowViewHolder flowViewHolder = this.adapter.createViewHolder(itemType,i,this);
+            this.adapter.bindViewHolder(flowViewHolder,i);
+            addView(flowViewHolder.getItemView());
+        }
+        requestLayout();
+    }
+
+    public FlowAdapter getAdapter() {
+        return adapter;
+    }
 
     /**
      * 根据父亲的Measure测量自身的MeasureSpec:宽
@@ -274,4 +291,5 @@ public class FlowLayout extends ViewGroup {
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
     }
+
 }
