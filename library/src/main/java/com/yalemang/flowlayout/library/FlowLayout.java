@@ -15,6 +15,7 @@ import java.util.HashMap;
  * 1.支持XML配置
  * 2.支持适配器配置
  * 3.支持滑动
+ * 4.可复用划出控件
  */
 public class FlowLayout extends ViewGroup {
 
@@ -228,13 +229,11 @@ public class FlowLayout extends ViewGroup {
             int childHeight = child.getMeasuredHeight();
 
             useWidth = useWidth - childWith;
-            Log.d("Ellen2018","剩余空间:"+useWidth);
             if (useWidth <= 0) {
                 //统计改行的最大高度
                 lineColumn.put(line, column);
                 lineMaxHeight.put(line, currentMaxHeight);
                 maxMoveHeight = maxMoveHeight + currentMaxHeight;
-                Log.d("Ellen2018", "第" + line + "行最大高度:" + currentMaxHeight);
                 line++;
                 column = 0;
                 useWidth = measureWidth;
@@ -257,7 +256,6 @@ public class FlowLayout extends ViewGroup {
         if (maxMoveHeight <= 0) {
             maxMoveHeight = 0;
         }
-        Log.d("Ellen2018", "最大可移动高度:" + maxMoveHeight);
         //设置最终宽高
         setMeasuredDimension(measureWidth, measureHeight);
     }
@@ -266,15 +264,12 @@ public class FlowLayout extends ViewGroup {
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
         int y = t;
         for (int i = 0; i <= line; i++) {
-            Log.d("Ellen2018","line = " +i);
             int currentLineColumn = lineColumn.get(i);
-            Log.d("Ellen2018","当前列数:"+currentLineColumn);
             int x = l;
             if(i > 0){
                 int currentLineMaxHeight = lineMaxHeight.get(i - 1);
                 y = y + currentLineMaxHeight;
             }
-            Log.d("Ellen2018", "当前Y起始位置:" + y);
             for (int j = 0; j < currentLineColumn; j++) {
                 int index = 0;
                 if (i > 0) {
@@ -289,8 +284,6 @@ public class FlowLayout extends ViewGroup {
                 View child = getChildAt(index);
                 int childWith = child.getMeasuredWidth();
                 int childHeight = child.getMeasuredHeight();
-                Log.d("Ellen2018", "当前X坐标:" + x);
-                Log.d("Ellen2018", "当前y坐标:" + y);
                 int right = x + childWith;
                 int bottom = y + childHeight;
                 child.layout(x, y, right, bottom);
