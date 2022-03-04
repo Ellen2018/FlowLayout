@@ -33,8 +33,8 @@ public class MyFlowAdapter extends FlowAdapter<FlowViewHolder> {
     }
 
     @Override
-    protected void bindViewHolder(FlowViewHolder viewHolder, int position) {
-          if(viewHolder instanceof FlowViewHolderType1){
+    protected void bindViewHolder(FlowViewHolder viewHolder, int position,int itemType) {
+          if(itemType == 0){
               FlowViewHolderType1 flowViewHolderType1 = (FlowViewHolderType1) viewHolder;
               flowViewHolderType1.tvFlow.setText("标签:"+position);
           }

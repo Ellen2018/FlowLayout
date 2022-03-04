@@ -34,6 +34,6 @@ public abstract class FlowAdapter<VH extends FlowViewHolder> {
      * @param viewHolder
      * @param position
      */
-    protected abstract void bindViewHolder(VH viewHolder,int position);
+    protected abstract void bindViewHolder(VH viewHolder,int position,int itemType);
 
 }

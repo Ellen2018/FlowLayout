@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -19,6 +20,10 @@ public class FlowLayout extends ViewGroup {
     private int line = 0;
     private HashMap<Integer, Integer> lineColumn;
     private HashMap<Integer, Integer> lineMaxHeight;
+    private int startX = 0;
+    private int startY = 0;
+    private int moveY = 0;
+    private int maxMoveHeight = 0;
 
     private FlowAdapter adapter;
 
@@ -59,7 +64,7 @@ public class FlowLayout extends ViewGroup {
         for (int i = 0; i < this.adapter.size(); i++) {
             int itemType = this.adapter.itemType(i);
             FlowViewHolder flowViewHolder = this.adapter.createViewHolder(itemType,i,this);
-            this.adapter.bindViewHolder(flowViewHolder,i);
+            this.adapter.bindViewHolder(flowViewHolder, i, itemType);
             addView(flowViewHolder.getItemView());
         }
         requestLayout();
@@ -205,13 +210,14 @@ public class FlowLayout extends ViewGroup {
         //结合xml设置的宽高和子控件需要的宽高，以及父亲给的限制计算出最终宽高
         //这里除去padding和margin
         int measureWidth = MeasureSpec.getSize(flowWidthMeasureSpec);
-        int measureHeight = 0;
+        int measureHeight = MeasureSpec.getSize(flowHeightMeasureSpec);
 
         int currentMaxHeight = 0;
         int column = 0;
         line = 0;
         int useWidth = measureWidth;
         lineColumn = new HashMap<>();
+        maxMoveHeight = 0;
         lineMaxHeight = new HashMap<>();
         //还没有做完的 未适配margin
         //第一次统计子控件的排列
@@ -226,7 +232,8 @@ public class FlowLayout extends ViewGroup {
                 //统计改行的最大高度
                 lineColumn.put(line, column);
                 lineMaxHeight.put(line, currentMaxHeight);
-                measureHeight = measureHeight + currentMaxHeight;
+                maxMoveHeight = maxMoveHeight + currentMaxHeight;
+                Log.d("Ellen2018", "第" + line + "行最大高度:" + currentMaxHeight);
                 line++;
                 column = 0;
                 useWidth = measureWidth;
@@ -244,10 +251,14 @@ public class FlowLayout extends ViewGroup {
         }
         lineColumn.put(line, column);
         lineMaxHeight.put(line, currentMaxHeight);
-        measureHeight = measureHeight + currentMaxHeight;
-
+        maxMoveHeight = maxMoveHeight + currentMaxHeight;
+        maxMoveHeight = maxMoveHeight - measureHeight;
+        if (maxMoveHeight <= 0) {
+            maxMoveHeight = 0;
+        }
+        Log.d("Ellen2018", "最大可移动高度:" + maxMoveHeight);
         //设置最终宽高
-        setMeasuredDimension(measureWidth,measureHeight);
+        setMeasuredDimension(measureWidth, measureHeight);
     }
 
     @Override
@@ -292,4 +303,75 @@ public class FlowLayout extends ViewGroup {
         super.onDraw(canvas);
     }
 
+    /**
+     * 负责事件分发
+     *
+     * @param ev
+     * @return
+     */
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent ev) {
+        return super.dispatchTouchEvent(ev);
+    }
+
+    /**
+     * 负责拦截事件
+     *
+     * @param ev
+     * @return
+     */
+    @Override
+    public boolean onInterceptTouchEvent(MotionEvent ev) {
+        switch (ev.getAction()) {
+            case MotionEvent.ACTION_DOWN:
+                startX = (int) ev.getX();
+                startY = (int) ev.getY();
+                Log.d("Ellen2018", "开始的坐标Y:" + startY);
+                break;
+            case MotionEvent.ACTION_MOVE:
+                int moveY = (int) (ev.getY() - startY);
+                scrollTo(0, moveY);
+                Log.d("Ellen2018", "移动距离:" + moveY);
+                startY = moveY;
+                break;
+            case MotionEvent.ACTION_UP:
+                break;
+        }
+        return true;
+    }
+
+    /**
+     * 负责处理事件
+     *
+     * @param event
+     * @return
+     */
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        switch (event.getAction()) {
+            case MotionEvent.ACTION_MOVE:
+                int currentMoveY = (int) (startY - event.getY()) + moveY;
+                if (currentMoveY >= 0) {
+                    if (currentMoveY > maxMoveHeight) {
+                        currentMoveY = maxMoveHeight;
+                    }
+                } else {
+                    currentMoveY = 0;
+                }
+                scrollTo(0, currentMoveY);
+                Log.d("Ellen2018", "移动距离:" + currentMoveY);
+                break;
+            case MotionEvent.ACTION_UP:
+                moveY = moveY + (int) (startY - event.getY());
+                if (moveY >= 0) {
+                    if (moveY > maxMoveHeight) {
+                        moveY = maxMoveHeight;
+                    }
+                } else {
+                    moveY = 0;
+                }
+                break;
+        }
+        return true;
+    }
 }
