@@ -229,17 +229,12 @@ public class FlowLayout2 extends ViewGroup {
                 //统计每行的开始位置
                 startIndex = i;
             }
-            Item item = new Item();
-            item.setFlowViewHolder(flowViewHolder);
-            item.setColumn(column);
-            item.setX(useX);
             if (measureWidth - useX < 0) {
                 if (endIndex < 0) {
                     endIndex = i;
                 }
                 //换行
                 line++;
-                column = 0;
                 userHeight = userHeight + currentMaxHeight;
                 List<Item> itemList = new ArrayList<>();
                 lineHashMap.put(line-1,itemList);
@@ -249,24 +244,42 @@ public class FlowLayout2 extends ViewGroup {
                     itemHashMap.get(index).setLine(line - 1);
                     itemList.add(itemHashMap.get(index));
                 }
-                startIndex = -1;
-                endIndex = -1;
                 if (userHeight > measureHeight) {
                     break;
                 } else {
                     useX = 0;
+                    column = 0;
+                    startIndex = -1;
+                    endIndex = -1;
+
+                    //添加超过的第一个
+                    currentMaxHeight = childHeight;
+                    Item itm = new Item();
+                    itm.setFlowViewHolder(flowViewHolder);
+                    itm.setColumn(column);
+                    itm.setX(useX);
+                    itm.setLine(line);
+                    startIndex = i;
+                    useX = useX + childWidth;
+                    column++;
+                    itm.setPosition(i);
+                    itemHashMap.put(i, itm);
                 }
             } else {
+                Item item = new Item();
+                item.setFlowViewHolder(flowViewHolder);
+                item.setColumn(column);
+                item.setX(useX);
                 //继续排列
                 if (currentMaxHeight < childHeight) {
                     currentMaxHeight = childHeight;
                 }
                 useX = useX + childWidth;
                 column++;
+                item.setPosition(i);
+                itemHashMap.put(i, item);
             }
             adapter.bindViewHolder(flowViewHolder, i, itemType);
-            item.setPosition(i);
-            itemHashMap.put(i, item);
         }
 
         //设置最终宽高
@@ -280,6 +293,11 @@ public class FlowLayout2 extends ViewGroup {
             Log.d("Ellen2018","第"+lin+"行");
             for(Item item:itemList){
                 Log.d("Ellen2018",item.toString());
+                FlowViewHolder flowViewHolder = item.getFlowViewHolder();
+                View childView = flowViewHolder.getItemView();
+                int childWidth = childView.getMeasuredWidth();
+                int childHeight = childView.getMeasuredHeight();
+                childView.layout(item.getX(), item.getY(),item.getX()+childWidth,item.getY()+childHeight);
             }
         }
     }
