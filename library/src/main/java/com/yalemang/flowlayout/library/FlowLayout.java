@@ -6,6 +6,7 @@ import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 
 import java.util.HashMap;
@@ -57,6 +58,10 @@ public class FlowLayout extends ViewGroup {
     private void parseCustomProperties() {
     }
 
+    public FlowAdapter getAdapter() {
+        return adapter;
+    }
+
     public void setAdapter(FlowAdapter adapter) {
         this.adapter = adapter;
         //移除所有子控件
@@ -68,10 +73,6 @@ public class FlowLayout extends ViewGroup {
             addView(flowViewHolder.getItemView());
         }
         requestLayout();
-    }
-
-    public FlowAdapter getAdapter() {
-        return adapter;
     }
 
     /**
@@ -322,22 +323,32 @@ public class FlowLayout extends ViewGroup {
      */
     @Override
     public boolean onInterceptTouchEvent(MotionEvent ev) {
+        boolean isIntercept = true;
         switch (ev.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 startX = (int) ev.getX();
                 startY = (int) ev.getY();
-                Log.d("Ellen2018", "开始的坐标Y:" + startY);
+                isIntercept = false;
                 break;
             case MotionEvent.ACTION_MOVE:
+                //这里move事件拦截的前提是移动超过了系统规定最小距离
+                //规定的移动最小距离
+                int touchSlop = ViewConfiguration.get(getContext()).getScaledTouchSlop();
                 int moveY = (int) (ev.getY() - startY);
-                scrollTo(0, moveY);
-                Log.d("Ellen2018", "移动距离:" + moveY);
-                startY = moveY;
+                if(moveY < 0){
+                    moveY = -moveY;
+                }
+                if(moveY >= touchSlop){
+                    isIntercept = true;
+                }else {
+                    isIntercept = false;
+                }
                 break;
             case MotionEvent.ACTION_UP:
+                isIntercept = false;
                 break;
         }
-        return true;
+        return isIntercept;
     }
 
     /**
@@ -359,7 +370,6 @@ public class FlowLayout extends ViewGroup {
                     currentMoveY = 0;
                 }
                 scrollTo(0, currentMoveY);
-                Log.d("Ellen2018", "移动距离:" + currentMoveY);
                 break;
             case MotionEvent.ACTION_UP:
                 moveY = moveY + (int) (startY - event.getY());

@@ -4,6 +4,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.yalemang.flowlayout.R;
 import com.yalemang.flowlayout.library.FlowAdapter;
@@ -38,6 +39,13 @@ public class MyFlowAdapter extends FlowAdapter<FlowViewHolder> {
               FlowViewHolderType1 flowViewHolderType1 = (FlowViewHolderType1) viewHolder;
               flowViewHolderType1.tvFlow.setText("标签:"+position);
           }
+          viewHolder.getItemView().setOnClickListener(v -> {
+              Toast.makeText(viewHolder.getItemView().getContext(),"测试点击",Toast.LENGTH_SHORT).show();
+          });
+          viewHolder.getItemView().setOnLongClickListener(v -> {
+              Toast.makeText(viewHolder.getItemView().getContext(),"测试长点击",Toast.LENGTH_SHORT).show();
+              return true;
+          });
     }
 
     static class FlowViewHolderType1 extends FlowViewHolder {
