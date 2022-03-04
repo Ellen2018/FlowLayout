@@ -18,6 +18,7 @@ import com.yalemang.flowlayout.adapter.MyFlowAdapter;
 import com.yalemang.flowlayout.databinding.ActivityMainBinding;
 import com.yalemang.flowlayout.library.FlowAdapter;
 import com.yalemang.flowlayout.library.FlowLayout;
+import com.yalemang.flowlayout.library.FlowLayout2;
 import com.yalemang.flowlayout.library.FlowViewHolder;
 
 import android.view.Menu;
@@ -27,14 +28,14 @@ import android.widget.TextView;
 
 public class MainActivity extends AppCompatActivity {
 
-    private FlowLayout flowLayout;
+    private FlowLayout2 flowLayout2;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        flowLayout = findViewById(R.id.flow);
-        flowLayout.setAdapter(new MyFlowAdapter());
+        flowLayout2 = findViewById(R.id.flow);
+        flowLayout2.setAdapter(new MyFlowAdapter());
     }
 
 
