@@ -6,6 +6,7 @@ import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 
 import java.util.ArrayList;
@@ -58,6 +59,7 @@ public class FlowLayout2 extends ViewGroup {
     }
 
     private void parseCustomProperties() {
+
     }
 
     public FlowAdapter getAdapter() {
@@ -214,6 +216,7 @@ public class FlowLayout2 extends ViewGroup {
         int currentMaxHeight = 0;
         int startIndex = -1;
         int endIndex = -1;
+        boolean isOverHeight = false;
         //加载第一屏数据
         for (int i = 0; i < adapter.size(); i++) {
             int itemType = adapter.itemType(i);
@@ -233,23 +236,22 @@ public class FlowLayout2 extends ViewGroup {
                 if (endIndex < 0) {
                     endIndex = i;
                 }
-                //换行
-                line++;
-                userHeight = userHeight + currentMaxHeight;
                 List<Item> itemList = new ArrayList<>();
-                lineHashMap.put(line-1,itemList);
-                //设置每排item的y坐标
                 for (int index = startIndex; index < endIndex; index++) {
                     itemHashMap.get(index).setY(userHeight);
-                    itemHashMap.get(index).setLine(line - 1);
+                    itemHashMap.get(index).setLine(line);
                     itemList.add(itemHashMap.get(index));
                 }
+                userHeight = userHeight + currentMaxHeight;
+                lineHashMap.put(line, itemList);
+                //设置每排item的y坐标
                 if (userHeight > measureHeight) {
+                    isOverHeight = true;
                     break;
                 } else {
+                    line++;
                     useX = 0;
                     column = 0;
-                    startIndex = -1;
                     endIndex = -1;
 
                     //添加超过的第一个
@@ -281,6 +283,61 @@ public class FlowLayout2 extends ViewGroup {
             }
             adapter.bindViewHolder(flowViewHolder, i, itemType);
         }
+        if (isOverHeight) {
+            //这里多加一行,提供复用机制的保障就是这里的多加载一行
+            int loadStartIndex = endIndex;
+            useX = 0;
+            column = 0;
+            line++;
+            for (int i = loadStartIndex; i < adapter.size(); i++) {
+                int itemType = adapter.itemType(i);
+                FlowViewHolder flowViewHolder = adapter.createViewHolder(itemType, i, this);
+                View childView = flowViewHolder.getItemView();
+                //添加子View
+                addView(childView, i);
+                //测量子View
+                measureChild(childView, flowWidthMeasureSpec, flowHeightMeasureSpec);
+                int childWidth = childView.getMeasuredWidth();
+                int childHeight = childView.getMeasuredHeight();
+                Log.d("Ellen2018","测量的子类:"+i);
+                Log.d("Ellen2018","测量的子类宽度:"+childWidth);
+                if (measureWidth - useX < 0) {
+                    List<Item> itemList = new ArrayList<>();
+                    for (int index = loadStartIndex; index < i; index++) {
+                        itemHashMap.get(index).setY(userHeight);
+                        itemHashMap.get(index).setLine(line);
+                        itemList.add(itemHashMap.get(index));
+                    }
+                    lineHashMap.put(line, itemList);
+                    break;
+                } else {
+                    Item item = new Item();
+                    item.setFlowViewHolder(flowViewHolder);
+                    item.setColumn(column);
+                    item.setX(useX);
+                    //继续排列
+                    if (currentMaxHeight < childHeight) {
+                        currentMaxHeight = childHeight;
+                    }
+                    useX = useX + childWidth;
+                    column++;
+                    item.setPosition(i);
+                    itemHashMap.put(i, item);
+                }
+                adapter.bindViewHolder(flowViewHolder, i, itemType);
+            }
+        } else {
+            //说明高度超过了需要的高度
+            endIndex = adapter.size();
+            List<Item> itemList = new ArrayList<>();
+            for (int index = startIndex; index < endIndex; index++) {
+                itemHashMap.get(index).setY(userHeight);
+                itemHashMap.get(index).setLine(line);
+                itemList.add(itemHashMap.get(index));
+            }
+            lineHashMap.put(line, itemList);
+        }
+
 
         //设置最终宽高
         setMeasuredDimension(measureWidth, measureHeight);
@@ -288,16 +345,16 @@ public class FlowLayout2 extends ViewGroup {
 
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
-        for (int lin = 0; lin < line; lin++) {
+        for (int lin = 0; lin <= line; lin++) {
             List<Item> itemList = lineHashMap.get(lin);
-            Log.d("Ellen2018","第"+lin+"行");
-            for(Item item:itemList){
-                Log.d("Ellen2018",item.toString());
+            Log.d("Ellen2018", "第" + lin + "行");
+            for (Item item : itemList) {
+                Log.d("Ellen2018", item.toString());
                 FlowViewHolder flowViewHolder = item.getFlowViewHolder();
                 View childView = flowViewHolder.getItemView();
                 int childWidth = childView.getMeasuredWidth();
                 int childHeight = childView.getMeasuredHeight();
-                childView.layout(item.getX(), item.getY(),item.getX()+childWidth,item.getY()+childHeight);
+                childView.layout(item.getX(), item.getY(), item.getX() + childWidth, item.getY() + childHeight);
             }
         }
     }
@@ -329,10 +386,26 @@ public class FlowLayout2 extends ViewGroup {
         boolean isIntercept = true;
         switch (ev.getAction()) {
             case MotionEvent.ACTION_DOWN:
+                startX = (int) ev.getX();
+                startY = (int) ev.getY();
+                isIntercept = false;
                 break;
             case MotionEvent.ACTION_MOVE:
+                //这里move事件拦截的前提是移动超过了系统规定最小距离
+                //规定的移动最小距离
+                int touchSlop = ViewConfiguration.get(getContext()).getScaledTouchSlop();
+                int moveY = (int) (ev.getY() - startY);
+                if(moveY < 0){
+                    moveY = -moveY;
+                }
+                if(moveY >= touchSlop){
+                    isIntercept = true;
+                }else {
+                    isIntercept = false;
+                }
                 break;
             case MotionEvent.ACTION_UP:
+                isIntercept = false;
                 break;
         }
         return isIntercept;
@@ -348,8 +421,23 @@ public class FlowLayout2 extends ViewGroup {
     public boolean onTouchEvent(MotionEvent event) {
         switch (event.getAction()) {
             case MotionEvent.ACTION_MOVE:
+                int currentMoveY = (int) (startY - event.getY()) + moveY;
+                if (currentMoveY < 0) {
+                    currentMoveY = 0;
+                }
+                //当滑动的距离已经达到最后一行开始时，就回收屏幕滑出去的
+                //当新的一行出现时就从复用池里面找到可复用的进行复用
+                scrollTo(0, currentMoveY);
                 break;
             case MotionEvent.ACTION_UP:
+                moveY = moveY + (int) (startY - event.getY());
+                if (moveY >= 0) {
+                    if (moveY > maxMoveHeight) {
+                        moveY = maxMoveHeight;
+                    }
+                } else {
+                    moveY = 0;
+                }
                 break;
         }
         return true;
