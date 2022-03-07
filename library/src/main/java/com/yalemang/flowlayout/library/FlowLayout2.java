@@ -28,6 +28,7 @@ public class FlowLayout2 extends ViewGroup {
     private int startY = 0;
     private int moveY = 0;
     private int maxMoveHeight = 0;
+    private int currentMoveY = 0;
 
     private FlowAdapter adapter;
 
@@ -412,8 +413,6 @@ public class FlowLayout2 extends ViewGroup {
         return isIntercept;
     }
 
-    private int currentMoveY = 0;
-
     /**
      * 负责处理事件
      *
@@ -424,6 +423,15 @@ public class FlowLayout2 extends ViewGroup {
     public boolean onTouchEvent(MotionEvent event) {
         switch (event.getAction()) {
             case MotionEvent.ACTION_MOVE:
+                //是否向下移动
+                boolean isMoveDown = true;
+                if (currentMoveY <= (int) (startY - event.getY()) + moveY) {
+                    //向下移动
+                    isMoveDown = true;
+                } else {
+                    //向上移动
+                    isMoveDown = false;
+                }
                 currentMoveY = (int) (startY - event.getY()) + moveY;
                 if (currentMoveY < 0) {
                     currentMoveY = 0;
@@ -431,6 +439,12 @@ public class FlowLayout2 extends ViewGroup {
                 //当滑动的距离已经达到最后一行开始时，就回收屏幕滑出去的
                 //当新的一行出现时就从复用池里面找到可复用的进行复用
                 scrollTo(0, currentMoveY);
+                //这里判断是向上滑动还是向下滑动
+                if (isMoveDown) {
+                    Log.d("Ellen2018", "向下移动中...");
+                } else {
+                    Log.d("Ellen2018", "向上移动中...");
+                }
                 break;
             case MotionEvent.ACTION_UP:
                 this.moveY = currentMoveY;
