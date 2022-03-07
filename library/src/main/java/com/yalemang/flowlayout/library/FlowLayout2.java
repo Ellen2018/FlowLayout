@@ -130,7 +130,7 @@ public class FlowLayout2 extends ViewGroup {
                 measureWidth = xmlWidth;
             }
         }
-        int measureSpec = MeasureSpec.makeMeasureSpec(measureWidth, MeasureSpec.EXACTLY);
+        int measureSpec = MeasureSpec.makeMeasureSpec(measureWidth, MeasureSpec.UNSPECIFIED);
         return measureSpec;
     }
 
@@ -189,7 +189,7 @@ public class FlowLayout2 extends ViewGroup {
                 measureHeight = xmlHeight;
             }
         }
-        int measureSpec = MeasureSpec.makeMeasureSpec(measureHeight, MeasureSpec.EXACTLY);
+        int measureSpec = MeasureSpec.makeMeasureSpec(measureHeight, MeasureSpec.UNSPECIFIED);
         return measureSpec;
     }
 
@@ -405,11 +405,14 @@ public class FlowLayout2 extends ViewGroup {
                 }
                 break;
             case MotionEvent.ACTION_UP:
+                this.moveY = currentMoveY;
                 isIntercept = false;
                 break;
         }
         return isIntercept;
     }
+
+    private int currentMoveY = 0;
 
     /**
      * 负责处理事件
@@ -421,7 +424,7 @@ public class FlowLayout2 extends ViewGroup {
     public boolean onTouchEvent(MotionEvent event) {
         switch (event.getAction()) {
             case MotionEvent.ACTION_MOVE:
-                int currentMoveY = (int) (startY - event.getY()) + moveY;
+                currentMoveY = (int) (startY - event.getY()) + moveY;
                 if (currentMoveY < 0) {
                     currentMoveY = 0;
                 }
@@ -430,14 +433,7 @@ public class FlowLayout2 extends ViewGroup {
                 scrollTo(0, currentMoveY);
                 break;
             case MotionEvent.ACTION_UP:
-                moveY = moveY + (int) (startY - event.getY());
-                if (moveY >= 0) {
-                    if (moveY > maxMoveHeight) {
-                        moveY = maxMoveHeight;
-                    }
-                } else {
-                    moveY = 0;
-                }
+                this.moveY = currentMoveY;
                 break;
         }
         return true;
