@@ -40,10 +40,10 @@ public class MyFlowAdapter extends FlowAdapter<FlowViewHolder> {
               flowViewHolderType1.tvFlow.setText("标签:"+position);
           }
           viewHolder.getItemView().setOnClickListener(v -> {
-              Toast.makeText(viewHolder.getItemView().getContext(),"测试点击",Toast.LENGTH_SHORT).show();
+              Toast.makeText(viewHolder.getItemView().getContext(),"测试点击:"+position,Toast.LENGTH_SHORT).show();
           });
           viewHolder.getItemView().setOnLongClickListener(v -> {
-              Toast.makeText(viewHolder.getItemView().getContext(),"测试长点击",Toast.LENGTH_SHORT).show();
+              Toast.makeText(viewHolder.getItemView().getContext(),"测试长点击:"+position,Toast.LENGTH_SHORT).show();
               return true;
           });
     }

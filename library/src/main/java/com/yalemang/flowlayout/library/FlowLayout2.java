@@ -23,12 +23,21 @@ public class FlowLayout2 extends ViewGroup {
 
     private int line = 0;
     private HashMap<Integer, Item> itemHashMap;
+    private HashMap<Integer, Integer> lineHeightMap;
     private HashMap<Integer, List<Item>> lineHashMap;
+    private HashMap<Integer, List<Item>> recyclerItems;
     private int startX = 0;
     private int startY = 0;
     private int moveY = 0;
     private int maxMoveHeight = 0;
     private int currentMoveY = 0;
+    //偏移行
+    private int offsetLine = 0;
+    //末尾指针
+    private int lastIndex;
+    //头部指针
+    private int headIndex;
+    private int useHeight = 0;
 
     private FlowAdapter adapter;
 
@@ -210,10 +219,11 @@ public class FlowLayout2 extends ViewGroup {
         int measureHeight = MeasureSpec.getSize(flowHeightMeasureSpec);
         itemHashMap = new HashMap<>();
         lineHashMap = new HashMap<>();
+        lineHeightMap = new HashMap<>();
         int useX = 0;
         line = 0;
+        useHeight = 0;
         int column = 0;
-        int userHeight = 0;
         int currentMaxHeight = 0;
         int startIndex = -1;
         int endIndex = -1;
@@ -239,14 +249,16 @@ public class FlowLayout2 extends ViewGroup {
                 }
                 List<Item> itemList = new ArrayList<>();
                 for (int index = startIndex; index < endIndex; index++) {
-                    itemHashMap.get(index).setY(userHeight);
+                    itemHashMap.get(index).setY(useHeight);
+                    itemHashMap.get(index).setHeight(currentMaxHeight);
                     itemHashMap.get(index).setLine(line);
                     itemList.add(itemHashMap.get(index));
                 }
-                userHeight = userHeight + currentMaxHeight;
+                useHeight = useHeight + currentMaxHeight;
                 lineHashMap.put(line, itemList);
+                lineHeightMap.put(line, currentMaxHeight);
                 //设置每排item的y坐标
-                if (userHeight > measureHeight) {
+                if (useHeight > measureHeight) {
                     isOverHeight = true;
                     break;
                 } else {
@@ -259,6 +271,8 @@ public class FlowLayout2 extends ViewGroup {
                     currentMaxHeight = childHeight;
                     Item itm = new Item();
                     itm.setFlowViewHolder(flowViewHolder);
+                    itm.setItemType(itemType);
+                    itm.setWidth(childWidth);
                     itm.setColumn(column);
                     itm.setX(useX);
                     itm.setLine(line);
@@ -271,7 +285,9 @@ public class FlowLayout2 extends ViewGroup {
             } else {
                 Item item = new Item();
                 item.setFlowViewHolder(flowViewHolder);
+                item.setItemType(itemType);
                 item.setColumn(column);
+                item.setWidth(childWidth);
                 item.setX(useX);
                 //继续排列
                 if (currentMaxHeight < childHeight) {
@@ -305,15 +321,21 @@ public class FlowLayout2 extends ViewGroup {
                 if (measureWidth - useX < 0) {
                     List<Item> itemList = new ArrayList<>();
                     for (int index = loadStartIndex; index < i; index++) {
-                        itemHashMap.get(index).setY(userHeight);
+                        itemHashMap.get(index).setY(useHeight);
+                        itemHashMap.get(index).setHeight(currentMaxHeight);
                         itemHashMap.get(index).setLine(line);
                         itemList.add(itemHashMap.get(index));
                     }
                     lineHashMap.put(line, itemList);
+                    lineHeightMap.put(line, currentMaxHeight);
+                    lastIndex = i - 1;
+                    useHeight = useHeight + currentMaxHeight;
                     break;
                 } else {
                     Item item = new Item();
                     item.setFlowViewHolder(flowViewHolder);
+                    item.setItemType(itemType);
+                    item.setWidth(childWidth);
                     item.setColumn(column);
                     item.setX(useX);
                     //继续排列
@@ -332,11 +354,16 @@ public class FlowLayout2 extends ViewGroup {
             endIndex = adapter.size();
             List<Item> itemList = new ArrayList<>();
             for (int index = startIndex; index < endIndex; index++) {
-                itemHashMap.get(index).setY(userHeight);
+                itemHashMap.get(index).setY(useHeight);
+                itemHashMap.get(index).setHeight(currentMaxHeight);
                 itemHashMap.get(index).setLine(line);
                 itemList.add(itemHashMap.get(index));
             }
             lineHashMap.put(line, itemList);
+            lineHeightMap.put(line, currentMaxHeight);
+            lastIndex = adapter.size() - 1;
+            //方便之后添加一行
+            useHeight = useHeight + currentMaxHeight;
         }
 
 
@@ -349,6 +376,7 @@ public class FlowLayout2 extends ViewGroup {
         for (int lin = 0; lin <= line; lin++) {
             List<Item> itemList = lineHashMap.get(lin);
             Log.d("Ellen2018", "第" + lin + "行");
+            Log.d("Ellen2018", "最大高度:" + lineHeightMap.get(lin));
             for (Item item : itemList) {
                 Log.d("Ellen2018", item.toString());
                 FlowViewHolder flowViewHolder = item.getFlowViewHolder();
@@ -358,6 +386,7 @@ public class FlowLayout2 extends ViewGroup {
                 childView.layout(item.getX(), item.getY(), item.getX() + childWidth, item.getY() + childHeight);
             }
         }
+        Log.d("Ellen2018", "绘制到的地方:" + lastIndex);
     }
 
     @Override
@@ -442,6 +471,53 @@ public class FlowLayout2 extends ViewGroup {
                 //这里判断是向上滑动还是向下滑动
                 if (isMoveDown) {
                     Log.d("Ellen2018", "向下移动中...");
+                    int height = 0;
+                    for (int i = offsetLine, j = 0; i >= 0; i--, j++) {
+                        height = height + lineHeightMap.get(j);
+                    }
+                    if (currentMoveY >= height) {
+                        //开始回收
+                        //被回收的行
+                        List<Item> itemList = lineHashMap.get(offsetLine);
+                        if (recyclerItems == null) {
+                            recyclerItems = new HashMap<>();
+                        }
+                        for (int i = 0; i < itemList.size(); i++) {
+                            Item itm = itemList.get(i);
+                            List<Item> items = recyclerItems.get(itm.getItemType());
+                            if(items == null){
+                                items = new ArrayList<>();
+                            }
+                            items.add(itm);
+                            Log.d("Ellen2018","回收:"+itm.getPosition());
+                            recyclerItems.put(itm.getItemType(),items);
+                        }
+
+                        //往下加一行
+                        for (int index = lastIndex + 1; index < adapter.size(); index++) {
+                            int itemType = adapter.itemType(index);
+                            List<Item> items = recyclerItems.get(itemType);
+                            if(items != null){
+                                //可以进行复用
+                                Log.d("Ellen2018","获取回收的个数:"+items.size());
+                                Item item = items.get(0);
+                                items.remove(item);
+                                if(items.size() == 0){
+                                    recyclerItems.remove(itemType);
+                                }
+                                adapter.bindViewHolder(item.getFlowViewHolder(),index,itemType);
+                                //设置位置
+                                Log.d("Ellen2018","当前绘制位置:"+useHeight);
+                                item.setY(useHeight);
+                                item.setPosition(index);
+                                View childView = item.getFlowViewHolder().getItemView();
+                                childView.setY(useHeight);
+                            }else {
+                                //无复用
+                            }
+                        }
+                        offsetLine++;
+                    }
                 } else {
                     Log.d("Ellen2018", "向上移动中...");
                 }
